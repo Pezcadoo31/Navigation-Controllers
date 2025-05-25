@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema ROS2 - Arquitectura y Comunicación</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .architecture-section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border-radius: 15px;
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            font-size: 1.8em;
+            margin-bottom: 25px;
+        }
+        .system-diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: inset 0 2px 15px rgba(0,0,0,0.05);
+            margin: 20px 0;
+        }
+        .layer {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        .node {
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 150px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .node:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        .simulation-layer { background: #e8f5e8; border: 3px solid #27ae60; }
+        .odometry-layer { background: #fff3cd; border: 3px solid #ffc107; }
+        .planner-layer { background: #d1ecf1; border: 3px solid #17a2b8; }
+        .controller-layer { background: #f8d7da; border: 3px solid #dc3545; }
+        .communication-layer { background: #e2e3e5; border: 3px solid #6c757d; }
+        .connection {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .topic-arrow {
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .vertical-arrow {
+            font-size: 24px;
+            color: #7f8c8d;
+            font-weight: bold;
+        }
+        .topics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .topics-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+        }
+        .topics-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+        .topics-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .topics-table tr:hover {
+            background: #e3f2fd;
+            transition: background 0.3s ease;
+        }
+        .msg-type {
+            background: #e7f3ff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .flow-description {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        .flow-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #3498db;
+        }
+        .flow-card h4 {
+            color: #2c3e50;
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+        .step-number {
+            background: #3498db;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .launch-configs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .launch-card {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: monospace;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .launch-card h4 {
+            color: #3498db;
+            margin-top: 0;
+        }
+        .command {
+            background: #34495e;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+        }
+        .parameter-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Sistema ROS2 - Arquitectura y Comunicación</h1>
+
+        <!-- Diagrama General del Sistema -->
+        <div class="architecture-section">
+            <h2>🏗️ Arquitectura General del Sistema</h2>
+            <div class="system-diagram">
+                
+                <!-- Capa de Simulación -->
+                <div class="layer">
+                    <div class="node simulation-layer">
+                        🐢 Turtlesim Node
+                        <br><small>Simulador Visual</small>
+                    </div>
+                </div>
+
+                <div class="connection">
+                    <div class="topic-arrow">/turtle1/pose</div>
+                    <div class="vertical-arrow">↕</div>
+                    <div class="topic-arrow">/turtle1/cmd_vel</div>
+                </div>
+
+                <!-- Capa de Odometría -->
+                <div class="layer">
+                    <div class="node odometry-layer">
+                        📍 Odometry Node
+                        <br><small>Estimación de Pose</small>
+                    </div>
+                </div>
+
+                <div class="connection">
+                    <div class="topic-arrow">/odom</div>
+                    <div class="vertical-arrow">↓</div>
+                </div>
+
+                <!-- Capa de Planificación -->
+                <div class="layer">
+                    <div class="node planner-layer">
+                        🗺️ Path Generator
+                        <br><small>Generador de Trayectoria</small>
+                    </div>
+                </div>
+
+                <div class="connection">
+                    <div class="topic-arrow">next_point</div>
+                    <div class="vertical-arrow">↓</div>
+                    <div class="topic-arrow">point_reached</div>
+                    <div class="vertical-arrow">↑</div>
+                </div>
+
+                <!-- Capa de Control -->
+                <div class="layer">
+                    <div class="node controller-layer">
+                        🎮 Turn & Go
+                    </div>
+                    <div class="node controller-layer">
+                        ⚡ Turn While Go
+                    </div>
+                    <div class="node controller-layer">
+                        🧠 Fuzzy Controller
+                    </div>
+                    <div class="node controller-layer">
+                        🎯 Pure Pursuit
+                    </div>
+                </div>
+
+                <div class="connection">
+                    <div class="topic-arrow">/turtle1/cmd_vel</div>
+                    <div class="vertical-arrow">↑</div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Tabla de Topics -->
+        <div class="architecture-section">
+            <h2>📡 Topics y Mensajes del Sistema</h2>
+            <table class="topics-table">
+                <tr>
+                    <th>Topic</th>
+                    <th>Tipo de Mensaje</th>
+                    <th>Publisher</th>
+                    <th>Subscriber</th>
+                    <th>Descripción</th>
+                </tr>
+                <tr>
+                    <td><strong>/turtle1/pose</strong></td>
+                    <td><span class="msg-type">turtlesim/Pose</span></td>
+                    <td>Turtlesim</td>
+                    <td>Controladores</td>
+                    <td>Posición real del robot (x, y, θ)</td>
+                </tr>
+                <tr>
+                    <td><strong>/turtle1/cmd_vel</strong></td>
+                    <td><span class="msg-type">geometry_msgs/Twist</span></td>
+                    <td>Controladores</td>
+                    <td>Turtlesim, Odometry</td>
+                    <td>Comandos de velocidad (v, ω)</td>
+                </tr>
+                <tr>
+                    <td><strong>/odom</strong></td>
+                    <td><span class="msg-type">nav_msgs/Odometry</span></td>
+                    <td>Odometry Node</td>
+                    <td>Controladores</td>
+                    <td>Estimación de pose y velocidades</td>
+                </tr>
+                <tr>
+                    <td><strong>/next_point</strong></td>
+                    <td><span class="msg-type">turtlesim/Pose</span></td>
+                    <td>Path Generator</td>
+                    <td>Controladores</td>
+                    <td>Siguiente punto objetivo (x, y)</td>
+                </tr>
+                <tr>
+                    <td><strong>/point_reached</strong></td>
+                    <td><span class="msg-type">std_msgs/Bool</span></td>
+                    <td>Controladores</td>
+                    <td>Path Generator</td>
+                    <td>Confirmación de llegada al objetivo</td>
+                </tr>
+                <tr>
+                    <td><strong>/VelocityEncR</strong></td>
+                    <td><span class="msg-type">std_msgs/Float32</span></td>
+                    <td>Robot Real</td>
+                    <td>Odometry (Puzzlebot)</td>
+                    <td>Velocidad encoder derecho</td>
+                </tr>
+                <tr>
+                    <td><strong>/VelocityEncL</strong></td>
+                    <td><span class="msg-type">std_msgs/Float32</span></td>
+                    <td>Robot Real</td>
+                    <td>Odometry (Puzzlebot)</td>
+                    <td>Velocidad encoder izquierdo</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Flujo de Funcionamiento -->
+        <div class="architecture-section">
+            <h2>🔄 Flujo de Funcionamiento del Sistema</h2>
+            <div class="flow-description">
+                <div class="flow-card">
+                    <h4><span class="step-number">1</span>Inicialización</h4>
+                    <ul>
+                        <li>Se lanza Turtlesim simulator</li>
+                        <li>Se inicia el nodo de odometría</li>
+                        <li>Se configura el modo (turtlesim/puzzlebot)</li>
+                        <li>Los controladores esperan en estado IDLE</li>
+                    </ul>
+                </div>
+                <div class="flow-card">
+                    <h4><span class="step-number">2</span>Generación de Trayectoria</h4>
+                    <ul>
+                        <li>Path Generator lee lista de puntos</li>
+                        <li>Envía primer punto via topic "next_point"</li>
+                        <li>Marca flag waiting_for_completion = True</li>
+                        <li>Los controladores reciben el objetivo</li>
+                    </ul>
+                </div>
+                <div class="flow-card">
+                    <h4><span class="step-number">3</span>Control de Movimiento</h4>
+                    <ul>
+                        <li>Controlador calcula errores de posición/orientación</li>
+                        <li>Aplica algoritmo específico (Turn&Go, Fuzzy, etc.)</li>
+                        <li>Publica comandos en /turtle1/cmd_vel</li>
+                        <li>Turtlesim ejecuta los movimientos</li>
+                    </ul>
+                </div>
+                <div class="flow-card">
+                    <h4><span class="step-number">4</span>Retroalimentación</h4>
+                    <ul>
+                        <li>Turtlesim publica pose real en /turtle1/pose</li>
+                        <li>Odometry estima pose en /odom</li>
+                        <li>Controladores comparan pose actual vs objetivo</li>
+                        <li>Se registran diferencias y tiempos</li>
+                    </ul>
+                </div>
+                <div class="flow-card">
+                    <h4><span class="step-number">5</span>Confirmación y Avance</h4>
+                    <ul>
+                        <li>Al llegar al objetivo: point_reached = True</li>
+                        <li>Path Generator recibe confirmación</li>
+                        <li>Se incrementa point_index++</li>
+                        <li>Se envía siguiente punto o se finaliza</li>
+                    </ul>
+                </div>
+                <div class="flow-card">
+                    <h4><span class="step-number">6</span>Monitoreo y Logging</h4>
+                    <ul>
+                        <li>Comparación REAL vs ODOM vs TARGET</li>
+                        <li>Registro de tiempos de llegada</li>
+                        <li>Logs en puntos de inicio, medio y fin</li>
+                        <li>Análisis de precisión del controlador</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuraciones de Lanzamiento -->
+        <div class="architecture-section">
+            <h2>🚀 Configuraciones de Lanzamiento</h2>
+            <div class="launch-configs">
+                <div class="launch-card">
+                    <h4>🐢 Configuración Turtlesim</h4>
+                    <div class="command">
+                        # Terminal 1: Lanzar simulador<br>
+                        ros2 run turtlesim turtlesim_node
+                    </div>
+                    <div class="command">
+                        # Terminal 2: Nodo odometría<br>
+                        ros2 run pkg_name odometry --ros-args -p robot_mode:=turtlesim
+                    </div>
+                    <div class="command">
+                        # Terminal 3: Generador de trayectoria<br>
+                        ros2 run pkg_name trayectory
+                    </div>
+                    <div class="command">
+                        # Terminal 4: Controlador (elegir uno)<br>
+                        ros2 run pkg_name turn_and_go_node<br>
+                        # o ros2 run pkg_name fuzzy_logic_controller
+                    </div>
+                </div>
+                <div class="launch-card">
+                    <h4>🤖 Configuración Puzzlebot</h4>
+                    <div class="command">
+                        # Terminal 1: Nodo odometría<br>
+                        ros2 run pkg_name odometry --ros-args -p robot_mode:=puzzlebot
+                    </div>
+                    <div class="command">
+                        # Terminal 3: Generador de trayectoria<br>
+                        ros2 run pkg_name trayectory
+                    </div>
+                    <div class="command">
+                        # Terminal 4: Controlador con coordenadas invertidas<br>
+                        ros2 run pkg_name pure_pursuit_controller --ros-args -p invert_coordinates:=true
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parámetros del Sistema -->
+        <div class="architecture-section">
+            <h2>⚙️ Parámetros Configurables</h2>
+            <div class="parameter-section">
+                <h4>🎛️ Parámetros Globales</h4>
+                <table class="topics-table">
+                    <tr>
+                        <th>Parámetro</th>
+                        <th>Nodo</th>
+                        <th>Valores</th>
+                        <th>Descripción</th>
+                    </tr>
+                    <tr>
+                        <td><strong>robot_mode</strong></td>
+                        <td>Odometry</td>
+                        <td>'turtlesim' | 'puzzlebot'</td>
+                        <td>Selecciona el modo de operación</td>
+                    </tr>
+                    <tr>
+                        <td><strong>invert_coordinates</strong></td>
+                        <td>Controladores</td>
+                        <td>true | false</td>
+                        <td>Intercambia coordenadas X e Y</td>
+                    </tr>
+                    <tr>
+                        <td><strong>k_linear</strong></td>
+                        <td>Controladores</td>
+                        <td>0.05 - 0.2</td>
+                        <td>Ganancia de velocidad lineal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>k_angular</strong></td>
+                        <td>Controladores</td>
+                        <td>0.05 - 0.5</td>
+                        <td>Ganancia de velocidad angular</td>
+                    </tr>
+                    <tr>
+                        <td><strong>distance_threshold</strong></td>
+                        <td>Controladores</td>
+                        <td>0.01 - 0.1</td>
+                        <td>Umbral de llegada al objetivo</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Herramientas de Debuggeo -->
+        <div class="architecture-section">
+            <h2>🔧 Herramientas de Monitoreo</h2>
+            <div class="flow-description">
+                <div class="flow-card">
+                    <h4>📊 Visualización de Topics</h4>
+                    <div class="command" style="background:#34495e; color:white; padding:10px; border-radius:5px; font-family:monospace;">
+                        # Ver todos los topics activos<br>
+                        ros2 topic list<br><br>
+                        # Monitorear un topic específico<br>
+                        ros2 topic echo /odom<br><br>
+                        # Ver información del topic<br>
+                        ros2 topic info /turtle1/cmd_vel
+                    </div>
+                </div>
+                <div class="flow-card">
+                    <h4>📈 Análisis de Rendimiento</h4>
+                    <div class="command" style="background:#34495e; color:white; padding:10px; border-radius:5px; font-family:monospace;">
+                        # Frecuencia de publicación<br>
+                        ros2 topic hz /odom<br><br>
+                        # Gráfico de topics<br>
+                        rqt_graph<br><br>
+                        # Plot de datos<br>
+                        rqt_plot /odom/pose/pose/position/x
+                    </div>
+                </div>
+                <div class="flow-card">
+                    <h4>🎯 Comparación de Precisión</h4>
+                    <ul>
+                        <li><strong>Logs automáticos:</strong> inicio, medio, fin</li>
+                        <li><strong>Métricas:</strong> REAL vs ODOM vs TARGET</li>
+                        <li><strong>Tiempos:</strong> tiempo total de llegada</li>
+                        <li><strong>Errores:</strong> diferencias en X, Y, θ</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
